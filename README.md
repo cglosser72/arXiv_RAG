@@ -1,4 +1,4 @@
-# Retrieval-Augmented Generation on arXiv Abstracts (`hep-ph`)
+# Retrieval-Augmented Generation on arXiv Abstracts
 
 This notebook demonstrates a simple RAG (Retrieval-Augmented Generation) system using abstracts from the [arXiv preprint server](https://arxiv.org).
 
