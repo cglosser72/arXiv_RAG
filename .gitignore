@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment files
+.env
+.venv/
+venv/
+ENV/
+env/
+*.env
+
+# VS Code and IDE settings
+.vscode/
+.idea/
+
+# macOS and system files
+.DS_Store
+Thumbs.db
+
+# FAISS index and metadata
+*.faiss
+*.json
+*.txt
+
+# Pip install logs
+pip-log.txt
+
+# pytest
+.cache/
+
+# Virtual environments and build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
