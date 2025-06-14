@@ -1,10 +1,17 @@
 import os
+from dotenv import load_dotenv
 import openai
 import arxiv
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 import json
+from openai import OpenAI
+import re
+from IPython.display import Markdown, display
+
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def fetch_arxiv_abstracts(query="hep-ph", max_results=10):
     search = arxiv.Search(
@@ -80,3 +87,45 @@ def retrieve_similar_abstracts(query, k=3, include_abstract=True):
             print(f"--- [{rank+1}] {paper['title']} ---")
 
     return matched_papers
+
+def ask_question_about_abstracts(papers, question, model="gpt-4o", max_tokens=500):
+    """
+    Ask GPT-4o a question based on the list of paper abstracts.
+    
+    Args:
+        papers (list): List of paper dicts with 'title' and 'abstract'.
+        question (str): User's question.
+        model (str): OpenAI model name (default: "gpt-4o").
+        max_tokens (int): Max tokens for response.
+
+    Returns:
+        str: GPT-4o's answer.
+    """
+    context = "\n\n".join(
+        [f"Title: {p['title']}\nAbstract: {p['abstract']}" for p in papers]
+    )
+
+    system_prompt = "You are an expert research assistant. Use the abstracts provided to answer the user's question as precisely as possible."
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Here are some research paper abstracts:\n\n{context}\n\nQuestion: {question}"}
+    ]
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens,
+        temperature=0.2
+    )
+
+    return response.choices[0].message.content.strip()
+
+def format_for_markdown(answer_text):
+    # Replace inline math: \( ... \) → $...$
+    answer_text = re.sub(r'\\\((.*?)\\\)', r'$\1$', answer_text)
+    
+    # Replace block math: \[ ... \] → $$...$$
+    answer_text = re.sub(r'\\\[(.*?)\\\]', r'$$\1$$', answer_text)
+
+    return answer_text
