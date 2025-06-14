@@ -49,3 +49,32 @@ We use the `all-MiniLM-L6-v2` model from the [SentenceTransformers](https://www.
 Each input text (e.g., an arXiv abstract or a user query) is mapped to a 384-dimensional vector that can be compared to other vectors using cosine or Euclidean distance.
 
 This model is especially useful for identifying semantically similar scientific texts, even when exact keywords don’t match.
+
+## Model Overview: GPT-4o in RAG
+
+Once relevant arXiv abstracts are retrieved using FAISS, we use **GPT-4o** — OpenAI's state-of-the-art language model — to answer user questions based on those abstracts.
+
+### Role in the RAG Pipeline
+
+GPT-4o acts as the **generation component** of our Retrieval-Augmented Generation (RAG) setup:
+
+1. **Retrieval (via FAISS):**  
+   A query is embedded and matched against stored abstract vectors to retrieve the most semantically relevant papers.
+
+2. **Context Construction:**  
+   The titles and abstracts of the top-k matching papers are concatenated into a single prompt.
+
+3. **Augmented Generation (via GPT-4o):**  
+   The user's question and the retrieved context are sent to GPT-4o, which produces a coherent, context-aware answer grounded in the source material.
+
+This approach ensures responses are **not hallucinated**, but are instead anchored in actual academic abstracts.
+
+### Why GPT-4o?
+
+- **Higher factual accuracy** than prior models
+- **Faster and cheaper** than GPT-4-turbo for API use
+- **128k token context window** allows handling of multiple full abstracts in a single query
+- **Domain-agnostic** reasoning suitable for diverse arXiv categories
+
+By combining **dense retrieval** with **generative reasoning**, this RAG system becomes a powerful tool for querying scientific literature with natural language.
+
