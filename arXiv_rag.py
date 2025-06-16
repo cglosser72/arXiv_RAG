@@ -29,9 +29,11 @@ def fetch_arxiv_abstracts(query="hep-ph", max_results=10):
             "title": result.title,
             "abstract": result.summary,
             "id": result.entry_id,
-            "url": result.pdf_url
+            "url": result.pdf_url,
+            "published": result.published.strftime("%Y-%m-%d"),
+            "authors": [a.name for a in result.authors],
+            "comment": result.comment
         })
-
     return papers
 
 # EMBED AND STORE
@@ -90,10 +92,10 @@ def retrieve_similar_abstracts(query, k=3, include_abstract=True):
 
 def ask_question_about_abstracts(papers, question, model="gpt-4o", max_tokens=500):
     """
-    Ask GPT-4o a question based on the list of paper abstracts.
-    
+    Ask GPT-4o a question based on the list of paper abstracts and structured metadata.
+
     Args:
-        papers (list): List of paper dicts with 'title' and 'abstract'.
+        papers (list): List of paper dicts with 'title', 'abstract', 'authors', etc.
         question (str): User's question.
         model (str): OpenAI model name (default: "gpt-4o").
         max_tokens (int): Max tokens for response.
@@ -101,15 +103,24 @@ def ask_question_about_abstracts(papers, question, model="gpt-4o", max_tokens=50
     Returns:
         str: GPT-4o's answer.
     """
-    context = "\n\n".join(
-        [f"Title: {p['title']}\nAbstract: {p['abstract']}" for p in papers]
-    )
+    context = "\n\n".join([
+        f"Paper {i+1}:\n"
+        f"  Title: {p['title']}\n"
+        f"  Authors: {', '.join(p.get('authors', []))}\n"
+        f"  Published: {p.get('published', 'N/A')}\n"
+        f"  Comment: {p.get('comment', '')}\n"
+        f"  Abstract: {p['abstract']}"
+        for i, p in enumerate(papers)
+    ])
 
-    system_prompt = "You are an expert research assistant. Use the abstracts provided to answer the user's question as precisely as possible."
+    system_prompt = (
+        "You are an expert research assistant. Use the structured data provided "
+        "(including authors, publication dates, and abstracts) to answer the user's question as accurately as possible."
+    )
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Here are some research paper abstracts:\n\n{context}\n\nQuestion: {question}"}
+        {"role": "user", "content": f"Here are some research papers:\n\n{context}\n\nQuestion: {question}"}
     ]
 
     response = client.chat.completions.create(
@@ -121,6 +132,7 @@ def ask_question_about_abstracts(papers, question, model="gpt-4o", max_tokens=50
 
     return response.choices[0].message.content.strip()
 
+
 def format_for_markdown(answer_text):
     # Replace inline math: \( ... \) → $...$
     answer_text = re.sub(r'\\\((.*?)\\\)', r'$\1$', answer_text)
@@ -129,3 +141,30 @@ def format_for_markdown(answer_text):
     answer_text = re.sub(r'\\\[(.*?)\\\]', r'$$\1$$', answer_text)
 
     return answer_text
+
+def extract_k_from_question(question, default_k=4, max_k=25):
+    """
+    Use GPT-4 to extract the number of results the user is asking for (e.g., "10 newest preprints").
+    If no number is found, return default_k.
+    """
+    prompt = (
+        "Extract the number of results requested in the question below.\n"
+        "Only return an integer, no explanation.\n\n"
+        f"Question: {question}"
+    )
+    
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=5,
+        temperature=0
+    )
+
+    try:
+        k = int(response.choices[0].message.content.strip())
+        if k>0:
+            return min(k, max_k)
+        else:
+            return default_k
+    except:
+        return default_k
