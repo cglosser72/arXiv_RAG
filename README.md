@@ -78,3 +78,43 @@ This approach ensures responses are **not hallucinated**, but are instead anchor
 
 By combining **dense retrieval** with **generative reasoning**, this RAG system becomes a powerful tool for querying scientific literature with natural language.
 
+## The Streamlit App
+
+A Streamlit app is included that you can launch on your local machine. To launch the Streamlit-based arXiv RAG (Retrieval-Augmented Generation) app on your machine, follow these steps:
+
+### 1. **Clone the Repository**
+```bash
+git clone https://github.com/your-username/arXiv_RAG.git
+cd arXiv_RAG
+```
+
+### 2. **Set Up a Virtual Environment (Optional but Recommended)**
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+### 3. **Install Dependencies**
+Make sure you have all required packages:
+```bash
+pip install -r requirements.txt
+```
+
+### 4. **Set Your OpenAI API Key**
+Create a `.env` file in the project root with your OpenAI API key:
+
+```
+OPENAI_API_KEY=sk-...
+```
+
+Alternatively, you can set it as an environment variable directly.
+
+### 5. **Run the App**
+```bash
+streamlit run app.py
+```
+
+This will open the app in your default browser at `http://localhost:8501`. 
+
+---
+
