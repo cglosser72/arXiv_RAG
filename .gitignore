@@ -29,6 +29,7 @@ Thumbs.db
 *.faiss
 *.json
 *.txt
+!requirements.txt
 
 # Pip install logs
 pip-log.txt
