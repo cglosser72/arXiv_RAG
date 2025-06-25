@@ -50,6 +50,35 @@ Each input text (e.g., an arXiv abstract or a user query) is mapped to a 384-dim
 
 This model is especially useful for identifying semantically similar scientific texts, even when exact keywords don’t match.
 
+### Model Overview: `cross-encoder/ms-marco-MiniLM-L-6-v2`
+
+To improve the accuracy of document retrieval, we incorporate a **CrossEncoder** model to rerank candidate abstracts retrieved by the bi-encoder model. This creates a two-stage retrieval pipeline: **dense retrieval followed by reranking**.
+
+#### What is a CrossEncoder?
+
+Unlike a BiEncoder (which encodes the query and document separately), a **CrossEncoder** feeds both the query and the document into the same Transformer at the same time. This allows the model to jointly attend to all tokens in the input, enabling much more precise relevance scoring.
+
+#### Why Use `cross-encoder/ms-marco-MiniLM-L-6-v2`?
+
+- **Architecture**: A lightweight transformer with ~22M parameters, based on MiniLM  
+- **Training Data**: Trained on the MS MARCO dataset (real-world web search queries and passages)  
+- **Input**: Pairs of text — in this case, `(query, abstract)`  
+- **Output**: A single relevance score for each pair
+
+#### Role in the RAG Pipeline:
+
+1. **Initial Retrieval**:  
+   Use `all-MiniLM-L6-v2` (BiEncoder) + FAISS to find top-k potentially relevant abstracts.
+
+2. **Reranking**:  
+   Score each `(query, abstract)` pair using the CrossEncoder.
+
+3. **Top-N Selection**:  
+   Return the top N highest-scoring abstracts to feed into GPT-4o for question answering.
+
+This hybrid strategy significantly boosts semantic accuracy while maintaining good performance, especially when abstracts contain similar keywords but differ in meaning.
+
+
 ## Model Overview: GPT-4o in RAG
 
 Once relevant arXiv abstracts are retrieved using FAISS, we use **GPT-4o** — OpenAI's state-of-the-art language model — to answer user questions based on those abstracts.
@@ -77,6 +106,8 @@ This approach ensures responses are **not hallucinated**, but are instead anchor
 - **Domain-agnostic** reasoning suitable for diverse arXiv categories
 
 By combining **dense retrieval** with **generative reasoning**, this RAG system becomes a powerful tool for querying scientific literature with natural language.
+
+---
 
 ## The Streamlit App
 
@@ -115,6 +146,4 @@ streamlit run app.py
 ```
 
 This will open the app in your default browser at `http://localhost:8501`. 
-
----
 

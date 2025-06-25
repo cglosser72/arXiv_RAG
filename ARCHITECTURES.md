@@ -4,7 +4,7 @@ This document outlines several Retrieval-Augmented Generation (RAG) architecture
 
 ---
 
-## 1. Naive RAG (archiv_rag.py)
+## 1. Naive RAG (archiv_rag.py: retrieve_similar_abstracts)
 
 **Description:**  
 Basic pipeline using dense vector retrieval (e.g., FAISS) followed by a single LLM generation step.
@@ -29,7 +29,7 @@ Encode query → Retrieve top-*k* docs → Concatenate context → Prompt LLM
 
 ---
 
-## 2. Retrieve-and-Rerank RAG
+## 2. Retrieve-and-Rerank RAG (archiv_rag.py: retrieve_and_rerank)
 
 **Description:**  
 Adds a reranking step using a cross-encoder or reranker model to filter and prioritize retrieved documents.

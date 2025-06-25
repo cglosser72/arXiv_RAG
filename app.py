@@ -5,6 +5,7 @@ from arXiv_rag import (
     embed_abstracts,
     store_faiss_index,
     retrieve_similar_abstracts,
+    retrieve_and_rerank,
     ask_question_about_abstracts,
     format_for_markdown,
     extract_k_from_question
@@ -49,11 +50,17 @@ if st.button("Fetch Latest & Embed"):
 # Question input
 question = st.text_area("What would you like to know?", "")
 
+use_rerank = st.checkbox("Use Cross-Encoder Reranking", value=True)
+
+
 # Ask a question using RAG
 if st.button("Ask Question"):
     with st.spinner("Retrieving relevant abstracts and generating answer..."):
         k = extract_k_from_question(question, default_k=4, max_k=25)
-        top_papers = retrieve_similar_abstracts(question, k=k, include_abstract=False)        
+        if use_rerank:
+            top_papers = retrieve_and_rerank(question, initial_k=max(2*k, 10), final_k=k)
+        else:
+            top_papers = retrieve_similar_abstracts(question, k=k, include_abstract=False)
         answer = ask_question_about_abstracts(top_papers, question)
         st.markdown("### GPT-4 Answer")
         st.markdown(answer)

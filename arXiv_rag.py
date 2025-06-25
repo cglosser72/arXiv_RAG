@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 import openai
 import arxiv
 from sentence_transformers import SentenceTransformer
+from sentence_transformers import CrossEncoder
+
 import faiss
 import numpy as np
 import json
@@ -168,3 +170,46 @@ def extract_k_from_question(question, default_k=4, max_k=25):
             return default_k
     except:
         return default_k
+
+def retrieve_and_rerank(query, initial_k=10, final_k=3):
+    """
+    Retrieve top-k abstracts using dense retrieval, then rerank using cross-encoder.
+
+    Args:
+        query (str): The user's query.
+        initial_k (int): Number of initial candidates from retriever.
+        final_k (int): Number of top reranked abstracts to return.
+
+    Returns:
+        list: Top reranked paper dicts.
+    """
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+
+    # Load retriever data
+    index = load_faiss_index()
+    metadata = load_metadata_abstracts()
+
+    # Retrieve dense matches
+    query_vec = model.encode([query])
+    _, I = index.search(np.array(query_vec), initial_k)
+    candidate_papers = [metadata[i] for i in I[0]]
+
+    # Prepare for reranking
+    rerank_inputs = [(query, paper['abstract']) for paper in candidate_papers]
+    scores = cross_encoder.predict(rerank_inputs)
+
+    # Sort and return top reranked
+    reranked = sorted(zip(scores, candidate_papers), key=lambda x: x[0], reverse=True)
+    top_reranked = [paper for score, paper in reranked[:final_k]]
+
+    print("\nReranked Top Matches:\n")
+    for rank, paper in enumerate(top_reranked):
+        print(f"--- [{rank+1}] {paper['title']} ---")
+        print(f" Abstract: {paper['abstract']}\n")
+        print(f" arXiv link: {paper['url']}")
+        print("—" * 80)
+
+    return top_reranked
+
+
