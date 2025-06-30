@@ -178,11 +178,9 @@ While dense retrieval captures semantic similarity, it sometimes overlooks impor
 3. **Score Fusion:**\
    Combine both scores using a tunable weight:
 
-   $$
-   \text{final\_score} = \alpha \cdot \text{bm25\_score} + (1 - \alpha) \cdot \text{dense\_score}
-   $$
+   `final_score = alpha * bm25_score + (1 - alpha) * dense_score`
 
-   where \(\alpha\) defaults to 0.5.
+   where `alpha` defaults to 0.5.
 
 ### Benefits
 
