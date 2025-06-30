@@ -5,3 +5,7 @@ arxiv
 openai
 python-dotenv
 numpy
+network
+scilit-learn
+seaborn
+rank_bm25

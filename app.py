@@ -8,7 +8,9 @@ from arXiv_rag import (
     retrieve_and_rerank,
     ask_question_about_abstracts,
     format_for_markdown,
-    extract_k_from_question
+    extract_k_from_question,
+    hybrid_retrieve,
+    agentic_rag_answer
 )
 
 
@@ -50,17 +52,46 @@ if st.button("Fetch Latest & Embed"):
 # Question input
 question = st.text_area("What would you like to know?", "")
 
-use_rerank = st.checkbox("Use Cross-Encoder Reranking", value=True)
+#use_rerank = st.checkbox("Use Cross-Encoder Reranking", value=True)
+retrieval_mode = st.selectbox(
+    "Select retrieval strategy:",
+    ["Dense Only", "Dense + Rerank", "Hybrid (Dense + BM25)", "Agentic RAG"]
+)
+
 
 
 # Ask a question using RAG
 if st.button("Ask Question"):
     with st.spinner("Retrieving relevant abstracts and generating answer..."):
         k = extract_k_from_question(question, default_k=4, max_k=25)
-        if use_rerank:
+#        if use_rerank:
+#            top_papers = retrieve_and_rerank(question, initial_k=max(2*k, 10), final_k=k)
+#        else:
+#            top_papers = retrieve_similar_abstracts(question, k=k, include_abstract=False)
+
+#        if retrieval_mode == "Hybrid (Dense + BM25)":
+#            top_papers = hybrid_retrieve(question, top_k=k)
+#        elif retrieval_mode == "Dense + Rerank":
+#            top_papers = retrieve_and_rerank(question, initial_k=max(2*k, 10), final_k=k)
+#        else:
+#            top_papers = retrieve_similar_abstracts(question, k=k, include_abstract=False)
+
+        if retrieval_mode == "Hybrid (Dense + BM25)":
+            top_papers = hybrid_retrieve(question, top_k=k)
+            answer = ask_question_about_abstracts(top_papers, question)
+        elif retrieval_mode == "Dense + Rerank":
             top_papers = retrieve_and_rerank(question, initial_k=max(2*k, 10), final_k=k)
-        else:
+            answer = ask_question_about_abstracts(top_papers, question)
+        elif retrieval_mode == "Dense Only":
             top_papers = retrieve_similar_abstracts(question, k=k, include_abstract=False)
+            answer = ask_question_about_abstracts(top_papers, question)
+        elif retrieval_mode == "Agentic RAG":
+            answer = agentic_rag_answer(question)
+            top_papers = []  # Optional: could capture subquery retrievals
+        else:
+            top_papers = []
+            answer = "Invalid retrieval mode."
+        
         answer = ask_question_about_abstracts(top_papers, question)
         st.markdown("### GPT-4 Answer")
         st.markdown(answer)
