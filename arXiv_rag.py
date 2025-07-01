@@ -299,6 +299,8 @@ def extract_k_from_question(question, default_k=4, max_k=25):
     except:
         return default_k
 
+### RETRIEVE AND RERANK RAG
+
 def retrieve_and_rerank(query, initial_k=10, final_k=3):
     """
     Retrieve top-k abstracts using dense retrieval, then rerank using cross-encoder.
@@ -339,6 +341,9 @@ def retrieve_and_rerank(query, initial_k=10, final_k=3):
         print("—" * 80)
 
     return top_reranked
+
+### HYBRID RAG
+
 
 def hybrid_retrieve(query, top_k=5, bm25_weight=0.5):
     """
@@ -388,7 +393,7 @@ def hybrid_retrieve(query, top_k=5, bm25_weight=0.5):
     top_combined = sorted(combined, key=lambda x: x[0], reverse=True)[:top_k]
     return [p for s, p in top_combined]
 
-
+####  GRAPH RAG 
 
 def construct_graph(papers, similarity_threshold=0.7):
     """
@@ -426,6 +431,39 @@ def construct_graph(papers, similarity_threshold=0.7):
                 G.add_edge(i, j, weight=sim)
 
     return G
+
+def expand_with_graph_neighbors(top_papers, graph, max_neighbors=2):
+    """
+    Given a set of top papers and a similarity graph, expand each paper with its most similar neighbors.
+
+    Args:
+        top_papers (list): List of paper dicts selected by reranking.
+        graph (networkx.Graph): Similarity graph where node IDs match paper indices.
+        max_neighbors (int): Max number of neighbors to include per top paper.
+
+    Returns:
+        expanded_papers (list): List of unique paper dicts from top_papers + graph neighbors.
+    """
+    node_indices = list(graph.nodes)
+    paper_lookup = {i: graph.nodes[i] for i in node_indices}
+
+    # Find indices of top papers in graph (assumes papers came from reranked result)
+    top_ids = [i for i, data in graph.nodes(data=True) if data in top_papers]
+    all_ids = set(top_ids)
+
+    for pid in top_ids:
+        neighbors = sorted(
+            graph[pid].items(),
+            key=lambda x: x[1].get("weight", 0),
+            reverse=True
+        )[:max_neighbors]
+        for nid, _ in neighbors:
+            all_ids.add(nid)
+
+    expanded_papers = [paper_lookup[i] for i in all_ids]
+    return expanded_papers
+
+
 
 def get_top_similar_pairs(papers, top_n=10):
     """
@@ -478,6 +516,8 @@ def plot_similarity_heatmap(papers, filename=''):
         plt.savefig(filename, dpi=300)
     plt.show()
     return plt
+
+###  AGENTIC RAG
 
 def agentic_rag_answer(question: str, model="gpt-4o", max_tokens=700):
     """
